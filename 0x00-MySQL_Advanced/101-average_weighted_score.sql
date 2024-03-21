@@ -1,3 +1,4 @@
+-- Procedure to compute and store the average weighted score for all users
 DELIMITER //
 
 CREATE PROCEDURE ComputeAverageWeightedScoreForUsers()
@@ -47,6 +48,6 @@ BEGIN
 
     -- Close the cursor
     CLOSE user_cursor;
-END//
+END //
 
 DELIMITER ;
