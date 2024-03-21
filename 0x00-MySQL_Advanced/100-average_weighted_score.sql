@@ -1,3 +1,4 @@
+-- Procedure to compute and store the average weighted score for a user
 DELIMITER //
 
 CREATE PROCEDURE ComputeAverageWeightedScoreForUser(IN user_id INT)
@@ -24,6 +25,6 @@ BEGIN
     UPDATE users
     SET average_score = avg_weighted_score
     WHERE id = user_id;
-END//
+END //
 
 DELIMITER ;
