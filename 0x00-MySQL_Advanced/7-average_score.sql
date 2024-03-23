@@ -12,7 +12,7 @@ BEGIN
     SELECT SUM(score) INTO total_score FROM corrections WHERE user_id = user_id;
 
     -- Count the total number of projects for the user
-    SELECT COUNT(*) INTO total_projects FROM corrections WHERE user_id = user_id;
+    SELECT COUNT(DISTINCT project_id) INTO total_projects FROM corrections WHERE user_id = user_id;
 
     -- Calculate the average score
     IF total_projects > 0 THEN
