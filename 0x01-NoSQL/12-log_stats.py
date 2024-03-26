@@ -13,11 +13,13 @@ def print_nginx_request_logs(nginx_collection):
     try:
         total_logs = nginx_collection.count_documents({})
         print('{} logs'.format(total_logs))
-        print('Methods:')
+        
         methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+        print('Methods:')
         for method in methods:
             req_count = nginx_collection.count_documents({'method': method})
             print('\tmethod {}: {}'.format(method, req_count))
+        
         status_checks_count = nginx_collection.count_documents({'method': 'GET', 'path': '/status'})
         print('{} status check'.format(status_checks_count))
     except Exception as e:
