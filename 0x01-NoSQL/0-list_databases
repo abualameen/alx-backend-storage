@@ -1,3 +1,2 @@
-// my comment
-use admin
-show databases
+// my displaying the existing data bases
+show dbs;
