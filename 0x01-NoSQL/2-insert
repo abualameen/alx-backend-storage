@@ -1,0 +1,2 @@
+// inserting operation to the database
+db.school.insert({name: "Holberton school"});
