@@ -26,8 +26,14 @@ def track_and_cache(method: Callable) -> Callable:
             return result.decode('utf-8')
         
         # Fetch content if not cached
-        content = method(url)
-        
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an error for bad responses
+            content = response.text
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching URL '{url}': {e}")
+            return ""
+
         # Cache content with expiration time of 10 seconds
         redis_store.setex(result_key, 10, content)
         
