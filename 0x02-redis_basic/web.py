@@ -1,38 +1,47 @@
 #!/usr/bin/env python3
-'''A module with tools for request caching and tracking.
-'''
-import redis
+"""A module for web-related functionalities."""
 import requests
+import redis
 from functools import wraps
 from typing import Callable
 
-
+# Initialize Redis connection
 redis_store = redis.Redis()
-'''The module-level Redis instance.
-'''
 
 
-def data_cacher(method: Callable) -> Callable:
-    '''Caches the output of fetched data.
-    '''
+def track_and_cache(method: Callable) -> Callable:
+    """Decorator to track URL access count and cache results."""
     @wraps(method)
-    def invoker(url) -> str:
-        '''The wrapper function for caching the output.
-        '''
-        redis_store.incr(f'count:{url}')
-        result = redis_store.get(f'result:{url}')
+    def wrapper(url: str) -> str:
+        """Wrapper function to track and cache URL content."""
+        count_key = f'count:{url}'
+        result_key = f'result:{url}'
+        
+        # Increment access count
+        redis_store.incr(count_key)
+        
+        # Check if result is cached
+        result = redis_store.get(result_key)
         if result:
             return result.decode('utf-8')
-        result = method(url)
-        redis_store.set(f'count:{url}', 0)
-        redis_store.setex(f'result:{url}', 10, result)
-        return result
-    return invoker
+        
+        # Fetch content if not cached
+        content = method(url)
+        
+        # Cache content with expiration time of 10 seconds
+        redis_store.setex(result_key, 10, content)
+        
+        return content
+    return wrapper
 
 
-@data_cacher
+@track_and_cache
 def get_page(url: str) -> str:
-    '''Returns the content of a URL after caching the request's response,
-    and tracking the request.
-    '''
+    """Fetches HTML content of a URL."""
     return requests.get(url).text
+
+
+if __name__ == "__main__":
+    # Example usage
+    url = "http://slowwly.robertomurray.co.uk/delay/1000/url/http://example.com"
+    print(get_page(url))
