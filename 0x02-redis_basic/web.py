@@ -1,38 +1,60 @@
+#!/usr/bin/env python3
+"""A module for web-related functionalities."""
 import requests
 import redis
-import time
+from functools import wraps
+from typing import Callable
 
-# Connect to Redis
-redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
+# Initialize Redis connection
+redis_store = redis.Redis()
 
+
+def track_and_cache(method: Callable) -> Callable:
+    """Decorator to track URL access count and cache results."""
+    @wraps(method)
+    def wrapper(url: str) -> str:
+        """Wrapper function to track and cache URL content."""
+        count_key = f'count:{url}'
+        result_key = f'result:{url}'
+
+        # Increment access count
+        redis_store.incr(count_key)
+
+        # Check if result is cached
+        result = redis_store.get(result_key)
+        if result:
+            return result.decode('utf-8')
+
+        # Fetch content if not cached
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an error for bad responses
+            content = response.text
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching URL '{url}': {e}")
+            return ""
+
+        # Cache content with expiration time of 10 seconds
+        redis_store.setex(result_key, 10, content)
+
+        return content
+    return wrapper
+
+
+@track_and_cache
 def get_page(url: str) -> str:
-    # Check if the URL has been accessed before
-    url_key = f"count:{url}"
-    count = redis_client.get(url_key)
-    if count:
-        # If accessed before, increment the count
-        redis_client.incr(url_key)
-    else:
-        # If not accessed before, set count to 1
-        redis_client.set(url_key, 1, ex=10)  # Cache for 10 seconds
-
-    # Check if the page is already cached
-    html_content = redis_client.get(url)
-    if not html_content:
-        # If not cached, make an HTTP request
+    """Fetches HTML content of a URL."""
+    try:
         response = requests.get(url)
-        if response.status_code == 200:
-            html_content = response.text
-            # Cache the HTML content for 10 seconds
-            redis_client.set(url, html_content, ex=10)
+        response.raise_for_status()  # Raise an error for bad responses
+        return response.text
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching URL '{url}': {e}")
+        return ""
 
-    return html_content
 
-# Test the function
 if __name__ == "__main__":
-    url = "http://slowwly.robertomurray.co.uk"
-    print(get_page(url))
-    # Wait for 10 seconds
-    time.sleep(10)
-    # Access the URL again
+    # Example usage
+    url = ("http://slowwly.robertomurray.co.uk/delay/1000/url/"
+           "http://example.com")
     print(get_page(url))
